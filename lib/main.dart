@@ -34,10 +34,55 @@ void main() {
       Hive.registerAdapter(HabitLogAdapter());
       Hive.registerAdapter(NoticeAdapter());
       
-      // Open boxes
-      await Hive.openBox<Habit>('habits');
-      await Hive.openBox<HabitLog>('habitLogs');
-      await Hive.openBox<Notice>('notices');
+      // Open boxes with error handling for schema mismatches
+      try {
+        await Hive.openBox<Habit>('habits');
+      } catch (e) {
+        if (e.toString().contains('is not a subtype of type')) {
+          debugPrint('Clearing corrupted habits box due to schema mismatch');
+          try {
+            await Hive.deleteBoxFromDisk('habits');
+          } catch (deleteError) {
+            debugPrint('Ignoring delete error: $deleteError');
+          }
+          await Hive.openBox<Habit>('habits');
+        } else {
+          rethrow;
+        }
+      }
+      
+      try {
+        await Hive.openBox<HabitLog>('habitLogs');
+      } catch (e) {
+        if (e.toString().contains('is not a subtype of type')) {
+          debugPrint('Clearing corrupted habitLogs box due to schema mismatch');
+          try {
+            await Hive.deleteBoxFromDisk('habitLogs');
+          } catch (deleteError) {
+            debugPrint('Ignoring delete error: $deleteError');
+          }
+          await Hive.openBox<HabitLog>('habitLogs');
+        } else {
+          rethrow;
+        }
+      }
+      
+      try {
+        await Hive.openBox<Notice>('notices');
+      } catch (e) {
+        if (e.toString().contains('is not a subtype of type')) {
+          debugPrint('Clearing corrupted notices box due to schema mismatch');
+          try {
+            await Hive.deleteBoxFromDisk('notices');
+          } catch (deleteError) {
+            debugPrint('Ignoring delete error: $deleteError');
+          }
+          await Hive.openBox<Notice>('notices');
+        } else {
+          rethrow;
+        }
+      }
+      
       await Hive.openBox('settings');
       
       // Check onboarding status BEFORE runApp
