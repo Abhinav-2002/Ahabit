@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/user_provider.dart';
 import 'home_screen.dart';
 
@@ -199,6 +200,10 @@ class _OnboardingFeelingScreenState extends State<OnboardingFeelingScreen> {
   void _goToHome() async {
     // Mark onboarding as complete
     await context.read<UserProvider>().setOnboardingComplete();
+    
+    // Mark as returning user (no longer first time)
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isFirstTime', false);
     
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(

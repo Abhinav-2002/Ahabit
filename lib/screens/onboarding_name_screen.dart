@@ -81,88 +81,91 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                 ],
               ),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: 24),
 
-              // Center content
+              // Center content - scrollable to prevent overflow
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Emoji
-                    const Text(
-                      '🌸',
-                      style: TextStyle(fontSize: 64),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Title
-                    const Text(
-                      'What should we call you?',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1A2E), // BG Dark
-                        height: 1.2,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Emoji
+                      const Text(
+                        '🌸',
+                        style: TextStyle(fontSize: 64),
                       ),
-                    ),
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 24),
 
-                    // Subtitle
-                    Text(
-                      "We'll personalize your experience",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF888888),
-                      ),
-                    ),
-                    const SizedBox(height: 48),
-
-                    // Name input field
-                    Focus(
-                      onFocusChange: (hasFocus) {
-                        setState(() {
-                          _isFocused = hasFocus;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: _isFocused 
-                                ? const Color(0xFFFF6B8A) // Primary Pink when focused
-                                : const Color(0xFFFFD6E0), // Soft Pink when unfocused
-                            width: 1.5,
-                          ),
+                      // Title
+                      const Text(
+                        'What should we call you?',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1A1A2E), // BG Dark
+                          height: 1.2,
                         ),
-                        child: TextField(
-                          controller: _nameController,
-                          onChanged: (_) => setState(() {}),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1A2E),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Subtitle
+                      Text(
+                        "We'll personalize your experience",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF888888),
+                        ),
+                      ),
+                      const SizedBox(height: 48),
+
+                      // Name input field
+                      Focus(
+                        onFocusChange: (hasFocus) {
+                          setState(() {
+                            _isFocused = hasFocus;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _isFocused 
+                                  ? const Color(0xFFFF6B8A) // Primary Pink when focused
+                                  : const Color(0xFFFFD6E0), // Soft Pink when unfocused
+                              width: 1.5,
+                            ),
                           ),
-                          decoration: InputDecoration(
-                            hintText: 'Your name...',
-                            hintStyle: TextStyle(
+                          child: TextField(
+                            controller: _nameController,
+                            onChanged: (_) => setState(() {}),
+                            style: const TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFFFFB3C6),
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1A2E),
                             ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, 
-                              vertical: 16,
+                            decoration: InputDecoration(
+                              hintText: 'Your name...',
+                              hintStyle: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFFFFB3C6),
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, 
+                                vertical: 16,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
 

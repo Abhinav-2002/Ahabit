@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:provider/provider.dart';
-import '../providers/user_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_name_screen.dart';
 import 'home_screen.dart';
 
@@ -69,20 +68,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       }
     });
 
-    // Navigate after 3.5 seconds
-    Future.delayed(const Duration(milliseconds: 3500), () {
-      if (mounted) {
-        final userProvider = context.read<UserProvider>();
-        
-        if (userProvider.isOnboardingComplete) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const OnboardingNameScreen()),
-          );
-        }
+    // Navigate after 3.5 seconds - check isFirstTime from SharedPreferences
+    Future.delayed(const Duration(milliseconds: 3500), () async {
+      if (!mounted) return;
+      
+      final prefs = await SharedPreferences.getInstance();
+      final bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
+      
+      if (isFirstTime) {
+        // First time user → Onboarding Name screen (Welcome removed)
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const OnboardingNameScreen()),
+        );
+      } else {
+        // Returning user → Home screen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
       }
     });
   }
