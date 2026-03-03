@@ -228,6 +228,21 @@ void dispose() {
     }
   }
 
+  void _pruneStaleControllers(List<Habit> currentHabits) {
+    final currentIds = currentHabits.map((h) => h.id).toSet();
+    final staleIds = _strikeControllers.keys.where((id) => !currentIds.contains(id)).toList();
+    for (final id in staleIds) {
+      _strikeControllers[id]?.dispose();
+      _strikeControllers.remove(id);
+      _strikeAnimations.remove(id);
+    }
+    for (final habit in currentHabits) {
+      if (!_strikeControllers.containsKey(habit.id)) {
+        _initStrikeAnimation(habit.id);
+      }
+    }
+  }
+
   void _loadDoneStates() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<HabitProvider>();
@@ -340,11 +355,13 @@ void dispose() {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final habitProvider = context.watch<HabitProvider>();
-    final userProvider = context.watch<UserProvider>();
-    final visibleHabits = habitProvider.visibleHabits;
-    final completedToday = habitProvider.getCompletedCountForDate(DateTime.now());
+    // Use context.select() for granular rebuilds - only rebuild when these specific values change
+    final visibleHabits = context.select<HabitProvider, List<Habit>>((p) => p.visibleHabits);
+    final completedToday = context.select<HabitProvider, int>((p) => p.getCompletedCountForDate(DateTime.now()));
     final totalToday = visibleHabits.length;
+    // Get providers via context.read() for mutation calls (don't trigger rebuilds)
+    final habitProvider = context.read<HabitProvider>();
+    final userProvider = context.read<UserProvider>();
 
     final screens = [
       _buildHomeContent(isDark, habitProvider, userProvider, visibleHabits, completedToday, totalToday),
@@ -392,6 +409,9 @@ void dispose() {
     int completedToday,
     int totalToday,
   ) {
+    // Prune stale animation controllers for deleted habits
+    _pruneStaleControllers(allVisibleHabits);
+
     final now = DateTime.now();
     final dateFormat = DateFormat('EEEE, MMM d');
     final percentage = habitProvider.getTodayCompletionPercent() / 100.0;
@@ -1062,8 +1082,6 @@ void dispose() {
     bool isInteractive,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    _initStrikeAnimation(habit.id);
     
     return GestureDetector(
       onLongPress: isInteractive ? () {

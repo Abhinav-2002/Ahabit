@@ -195,6 +195,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       child: TextField(
                         controller: _nameController,
                         style: Theme.of(context).textTheme.bodyLarge,
+                        maxLength: 50,
                         decoration: InputDecoration(
                           hintText: 'e.g., Drink Water',
                           hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -202,6 +203,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.all(16),
+                          counterText: '',
                         ),
                       ),
                     ),
@@ -231,6 +233,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                         controller: _descriptionController,
                         style: Theme.of(context).textTheme.bodyLarge,
                         maxLines: 2,
+                        maxLength: 120,
                         decoration: InputDecoration(
                           hintText: 'e.g., Drink 8 glasses daily',
                           hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -238,6 +241,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.all(16),
+                          counterText: '',
                         ),
                       ),
                     ),
@@ -420,11 +424,40 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     );
   }
 
+  void _showValidationError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFFFF6B8A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _saveHabit() {
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a habit name')),
-      );
+    final name = _nameController.text.trim();
+    final description = _descriptionController.text.trim();
+
+    if (name.isEmpty) {
+      _showValidationError('Please enter a habit name');
+      return;
+    }
+
+    if (name.length > 50) {
+      _showValidationError('Habit name must be 50 characters or less');
+      return;
+    }
+
+    if (description.length > 120) {
+      _showValidationError('Description must be 120 characters or less');
       return;
     }
 

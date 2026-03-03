@@ -5,14 +5,52 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/habit.dart';
 import '../models/habit_log.dart';
+import '../repositories/habit_repository.dart';
+import '../repositories/habit_log_repository.dart';
 import '../services/widget_helper.dart';
 import '../services/notification_service.dart';
 import '../utils/habit_utils.dart';
 
 class HabitProvider extends ChangeNotifier {
-  final Box<Habit> _habitsBox = Hive.box<Habit>('habits');
-  final Box<HabitLog> _logsBox = Hive.box<HabitLog>('habitLogs');
+  final HabitRepository _habitRepository;
+  final HabitLogRepository _logRepository;
+  final Box<Habit> _habitsBox;
+  final Box<HabitLog> _logsBox;
   final _uuid = const Uuid();
+
+  HabitProvider({
+    HabitRepository? habitRepository,
+    HabitLogRepository? logRepository,
+  })  : _habitRepository = habitRepository ?? StubHabitRepository(),
+        _logRepository = logRepository ?? StubHabitLogRepository(),
+        _habitsBox = Hive.box<Habit>('habits'),
+        _logsBox = Hive.box<HabitLog>('habitLogs');
+
+  // Dirty-flag cache for O(1) log lookups
+  bool _cacheDirty = true;
+  Map<String, Map<String, HabitLog>> _logIndex = {}; // habitId → dateKey → log
+
+  String _dateKey(DateTime date) => DateFormat('yyyy-MM-dd').format(date);
+
+  void _markCacheDirty() {
+    _cacheDirty = true;
+  }
+
+  void _rebuildIndexIfNeeded() {
+    if (!_cacheDirty) return;
+    _logIndex = {};
+    for (final log in _logsBox.values) {
+      final dateKey = _dateKey(log.date);
+      _logIndex.putIfAbsent(log.habitId, () => {})[dateKey] = log;
+    }
+    _cacheDirty = false;
+  }
+
+  @override
+  void notifyListeners() {
+    _markCacheDirty();
+    super.notifyListeners();
+  }
 
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
@@ -31,13 +69,8 @@ class HabitProvider extends ChangeNotifier {
   }
 
   HabitLog? getRecordForDate(String habitId, DateTime date) {
-    try {
-      return _logsBox.values.firstWhere(
-        (r) => r.habitId == habitId && _isSameDay(r.date, date)
-      );
-    } catch (e) {
-      return null;
-    }
+    _rebuildIndexIfNeeded();
+    return _logIndex[habitId]?[_dateKey(date)];
   }
 
   bool isHabitCompletedToday(String habitId) {
@@ -185,53 +218,51 @@ class HabitProvider extends ChangeNotifier {
   // --- PERFECT COMPLETION CALCULATIONS ---
 
   int getCompletedCountForDate(DateTime date) {
+    _rebuildIndexIfNeeded();
     if (visibleHabits.isEmpty) return 0;
     
     final habitsOnDate = visibleHabits.where((h) => habitExistedOnDate(h, date)).toList();
     if (habitsOnDate.isEmpty) return 0;
 
-    return habitsOnDate.where((h) =>
-      _logsBox.values.any((l) =>
-        l.habitId == h.id &&
-        _isSameDay(l.date, date) &&
-        l.isPunched == true
-      )
-    ).length;
+    final dateKey = _dateKey(date);
+    return habitsOnDate.where((h) {
+      final log = _logIndex[h.id]?[dateKey];
+      return log?.isPunched == true;
+    }).length;
   }
 
   bool isDayComplete(DateTime date) {
+    _rebuildIndexIfNeeded();
     if (visibleHabits.isEmpty) return false;
     
     final habitsOnDate = visibleHabits.where((h) => habitExistedOnDate(h, date)).toList();
     if (habitsOnDate.isEmpty) return false;
 
-    return habitsOnDate.every((habit) =>
-      _logsBox.values.any((log) =>
-        log.habitId == habit.id &&
-        _isSameDay(log.date, date) &&
-        log.isPunched == true
-      )
-    );
+    final dateKey = _dateKey(date);
+    return habitsOnDate.every((habit) {
+      final log = _logIndex[habit.id]?[dateKey];
+      return log?.isPunched == true;
+    });
   }
 
   bool isDayPartial(DateTime date) {
+    _rebuildIndexIfNeeded();
     if (visibleHabits.isEmpty) return false;
     
     final habitsOnDate = visibleHabits.where((h) => habitExistedOnDate(h, date)).toList();
     if (habitsOnDate.isEmpty) return false;
 
-    final doneCount = habitsOnDate.where((habit) =>
-      _logsBox.values.any((log) =>
-        log.habitId == habit.id &&
-        _isSameDay(log.date, date) &&
-        log.isPunched == true
-      )
-    ).length;
+    final dateKey = _dateKey(date);
+    final doneCount = habitsOnDate.where((habit) {
+      final log = _logIndex[habit.id]?[dateKey];
+      return log?.isPunched == true;
+    }).length;
     
     return doneCount > 0 && doneCount < habitsOnDate.length;
   }
 
   int calculateCurrentStreak() {
+    _rebuildIndexIfNeeded();
     int streak = 0;
     DateTime check = DateTime(
       DateTime.now().year,
@@ -252,15 +283,14 @@ class HabitProvider extends ChangeNotifier {
         break; // Stop if there were no habits
       }
 
-      final anyDone = _logsBox.values.any((log) {
-        final logDate = DateTime(log.date.year, log.date.month, log.date.day);
-        return logDate.isAtSameMomentAs(check) &&
-          log.isPunched == true &&
-          !log.habitId.startsWith('FREEZE_');
+      final dateKey = _dateKey(check);
+      final anyDone = _logIndex.values.any((habitLogs) {
+        final log = habitLogs[dateKey];
+        return log != null && log.isPunched == true && !log.habitId.startsWith('FREEZE_');
       });
       
       final freezeKey = 'FREEZE_${DateFormat('yyyy-MM-dd').format(check)}';
-      final isFrozen = _logsBox.values.any((l) => l.habitId == freezeKey);
+      final isFrozen = _logIndex.containsKey(freezeKey);
       
       if (anyDone || isFrozen) {
         streak++;
@@ -300,6 +330,7 @@ class HabitProvider extends ChangeNotifier {
   }
 
   int calculateHabitStreak(String habitId) {
+    _rebuildIndexIfNeeded();
     int streak = 0;
     DateTime check = DateTime(
       DateTime.now().year,
@@ -316,12 +347,8 @@ class HabitProvider extends ChangeNotifier {
         break;
       }
 
-      final done = _logsBox.values.any((log) {
-        final logDate = DateTime(log.date.year, log.date.month, log.date.day);
-        return log.habitId == habitId &&
-          logDate.isAtSameMomentAs(check) &&
-          log.isPunched == true;
-      });
+      final log = _logIndex[habitId]?[_dateKey(check)];
+      final done = log?.isPunched == true;
       
       if (done) {
         streak++;
@@ -334,33 +361,31 @@ class HabitProvider extends ChangeNotifier {
   }
 
   int getTodayCompletionPercent() {
+    _rebuildIndexIfNeeded();
     final today = DateTime.now();
     if (visibleHabits.isEmpty) return 0;
     
     final habitsForToday = visibleHabits.where((h) => habitExistedOnDate(h, today)).toList();
     if (habitsForToday.isEmpty) return 0;
 
-    final done = habitsForToday.where((h) =>
-      _logsBox.values.any((l) =>
-        l.habitId == h.id &&
-        _isSameDay(l.date, today) &&
-        l.isPunched == true
-      )
-    ).length;
+    final dateKey = _dateKey(today);
+    final done = habitsForToday.where((h) {
+      final log = _logIndex[h.id]?[dateKey];
+      return log?.isPunched == true;
+    }).length;
     
     return (done / habitsForToday.length * 100).round();
   }
 
   int getTodayDoneCount() {
+    _rebuildIndexIfNeeded();
     final today = DateTime.now();
     final habitsForToday = visibleHabits.where((h) => habitExistedOnDate(h, today)).toList();
-    return habitsForToday.where((h) =>
-      _logsBox.values.any((l) =>
-        l.habitId == h.id &&
-        _isSameDay(l.date, today) &&
-        l.isPunched == true
-      )
-    ).length;
+    final dateKey = _dateKey(today);
+    return habitsForToday.where((h) {
+      final log = _logIndex[h.id]?[dateKey];
+      return log?.isPunched == true;
+    }).length;
   }
 
   int getTotalHabitsCount() {
@@ -368,6 +393,7 @@ class HabitProvider extends ChangeNotifier {
   }
 
   List<bool?> getHabitWeekCompletion(String habitId) {
+    _rebuildIndexIfNeeded();
     final today = DateTime.now();
     final habit = _habitsBox.get(habitId);
     if (habit == null) return List.filled(7, false);
@@ -377,15 +403,13 @@ class HabitProvider extends ChangeNotifier {
       if (!habitExistedOnDate(habit, day)) {
         return null;
       }
-      return _logsBox.values.any((l) =>
-        l.habitId == habitId &&
-        _isSameDay(l.date, day) &&
-        l.isPunched == true
-      );
+      final log = _logIndex[habitId]?[_dateKey(day)];
+      return log?.isPunched == true;
     });
   }
 
   Map<int, bool?> getHabitMonthCompletion(String habitId) {
+    _rebuildIndexIfNeeded();
     final now = DateTime.now();
     final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
     
@@ -397,11 +421,8 @@ class HabitProvider extends ChangeNotifier {
       if (habit != null && !habitExistedOnDate(habit, date)) {
         result[d] = null;
       } else {
-        result[d] = _logsBox.values.any((l) =>
-          l.habitId == habitId &&
-          _isSameDay(l.date, date) &&
-          l.isPunched == true
-        );
+        final log = _logIndex[habitId]?[_dateKey(date)];
+        result[d] = log?.isPunched == true;
       }
     }
     return result;
@@ -412,6 +433,7 @@ class HabitProvider extends ChangeNotifier {
   }
 
   Map<String, int?> getMonthlyStats(String habitId, int year, int month) {
+    _rebuildIndexIfNeeded();
     final stats = <String, int?>{};
     final habit = _habitsBox.get(habitId);
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
@@ -421,12 +443,8 @@ class HabitProvider extends ChangeNotifier {
       if (habit != null && !habitExistedOnDate(habit, date)) {
         stats[d.toString()] = null;
       } else {
-        final isPunched = _logsBox.values.any((l) =>
-          l.habitId == habitId &&
-          _isSameDay(l.date, date) &&
-          l.isPunched == true
-        );
-        stats[d.toString()] = isPunched ? 1 : 0;
+        final log = _logIndex[habitId]?[_dateKey(date)];
+        stats[d.toString()] = log?.isPunched == true ? 1 : 0;
       }
     }
     
@@ -434,6 +452,7 @@ class HabitProvider extends ChangeNotifier {
   }
 
   Map<String, dynamic> getYearlyStats(String habitId, int year) {
+    _rebuildIndexIfNeeded();
     final monthlyData = <int, int>{};
     int totalCompleted = 0;
     
@@ -446,12 +465,8 @@ class HabitProvider extends ChangeNotifier {
       for (int day = 1; day <= daysInMonth; day++) {
         final date = DateTime(year, month, day);
         if (habit != null && habitExistedOnDate(habit, date)) {
-          final isPunched = _logsBox.values.any((l) =>
-              l.habitId == habitId &&
-              _isSameDay(l.date, date) &&
-              l.isPunched == true
-          );
-          if (isPunched) {
+          final log = _logIndex[habitId]?[_dateKey(date)];
+          if (log?.isPunched == true) {
             monthCompleted++;
             totalCompleted++;
           }

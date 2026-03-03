@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'models/habit.dart';
 import 'models/habit_log.dart';
 import 'models/notice.dart';
+import 'repositories/habit_repository.dart';
+import 'repositories/habit_log_repository.dart';
 import 'providers/habit_provider.dart';
 import 'providers/notices_provider.dart';
 import 'providers/theme_provider.dart';
@@ -15,6 +17,81 @@ import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
 import 'services/widget_helper.dart';
 import 'services/workmanager_service.dart';
+
+/// Hive-backed implementation of HabitRepository
+class HiveHabitRepository implements HabitRepository {
+  final Box<Habit> _box;
+  HiveHabitRepository(this._box);
+
+  @override
+  List<Habit> getAllHabits() => _box.values.toList();
+
+  @override
+  List<Habit> getVisibleHabits() => _box.values.where((h) => !h.isHidden).toList();
+
+  @override
+  Habit? getHabitById(String id) => _box.get(id);
+
+  @override
+  Future<void> saveHabit(Habit habit) async => await _box.put(habit.id, habit);
+
+  @override
+  Future<void> deleteHabit(String id) async {
+    final habit = _box.get(id);
+    if (habit != null) {
+      habit.isHidden = true;
+      await habit.save();
+    }
+  }
+
+  @override
+  Future<void> updateHabit(Habit habit) async => await habit.save();
+}
+
+/// Hive-backed implementation of HabitLogRepository
+class HiveHabitLogRepository implements HabitLogRepository {
+  final Box<HabitLog> _box;
+  HiveHabitLogRepository(this._box);
+
+  @override
+  List<HabitLog> getAllLogs() => _box.values.toList();
+
+  @override
+  List<HabitLog> getLogsForHabit(String habitId) =>
+      _box.values.where((l) => l.habitId == habitId).toList();
+
+  @override
+  HabitLog? getLogForDate(String habitId, DateTime date) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    try {
+      return _box.values.firstWhere(
+        (l) => l.habitId == habitId &&
+          DateTime(l.date.year, l.date.month, l.date.day).isAtSameMomentAs(normalizedDate),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> saveLog(HabitLog log) async => await log.save();
+
+  @override
+  Future<void> deleteLog(String id) async {
+    final log = _box.get(id);
+    if (log != null) await log.delete();
+  }
+
+  @override
+  Future<void> addLog(HabitLog log) async => await _box.add(log);
+
+  @override
+  Future<int> clearAllLogs() async {
+    final count = _box.length;
+    await _box.clear();
+    return count;
+  }
+}
 
 void main() {
   runZonedGuarded(() async {
@@ -206,7 +283,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => HabitProvider()),
+        ChangeNotifierProvider(
+          create: (_) => HabitProvider(
+            habitRepository: HiveHabitRepository(Hive.box<Habit>('habits')),
+            logRepository: HiveHabitLogRepository(Hive.box<HabitLog>('habitLogs')),
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => NoticesProvider()),
       ],
       child: Consumer<ThemeProvider>(
