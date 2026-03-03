@@ -26,6 +26,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F0F3), // BG Light
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -209,7 +210,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
             ],
           ),
         ),

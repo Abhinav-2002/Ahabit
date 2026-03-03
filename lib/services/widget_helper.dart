@@ -254,27 +254,39 @@ class WidgetHelper {
   /// Sync pending toggles from widget back to Hive
   static Future<void> syncPendingToggles(HabitProvider habitProvider) async {
     try {
+      // Ensure Hive is initialized (critical for background/resume scenarios)
+      if (!Hive.isBoxOpen('habits')) {
+        await Hive.openBox<Habit>('habits');
+      }
+      if (!Hive.isBoxOpen('habitLogs')) {
+        await Hive.openBox<HabitLog>('habitLogs');
+      }
+      
       final prefs = await SharedPreferences.getInstance();
+      // Force fresh read — Kotlin widget writes outside Flutter's in-memory cache
+      await prefs.reload();
+      // The widget saves to 'widget.pending_toggles' (flutter prefix added by plugin)
       final pendingJson = prefs.getString('widget.pending_toggles') ?? '[]';
       final List<dynamic> pending = jsonDecode(pendingJson);
 
       if (pending.isEmpty) return;
 
-      debugPrint('widget syncPendingToggles: ${pending.length} pending toggles');
+      debugPrint('WIDGET SYNC: ${pending.length} pending toggles found: $pending');
 
       for (final habitId in pending) {
-        debugPrint('widget syncing toggle for habit: $habitId');
+        debugPrint('WIDGET SYNC: processing toggle for habit: $habitId');
         await habitProvider.toggleHabitById(habitId as String);
       }
 
       // Clear pending toggles after sync
       await prefs.setString('widget.pending_toggles', '[]');
-      debugPrint('widget pending toggles cleared');
+      debugPrint('WIDGET SYNC: pending toggles cleared');
       
-      // Force widget update to reflect synced changes
+      // Force widget update to reflect synced changes (both widget and app now in sync)
       await forceWidgetUpdate();
-    } catch (e) {
-      debugPrint('widget syncPendingToggles error: $e');
+    } catch (e, stack) {
+      debugPrint('WIDGET SYNC ERROR: $e');
+      debugPrint('Stack: $stack');
     }
   }
 

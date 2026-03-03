@@ -29,6 +29,8 @@ dependencies:
   flutter_timezone: 3.0.1
   audioplayers: ^6.5.1
   workmanager: ^0.6.0
+  webview_flutter: ^4.8.0
+  url_launcher: ^6.3.0
 
 
 dev_dependencies:
@@ -37,9 +39,37 @@ dev_dependencies:
   flutter_lints: ^3.0.1
   hive_generator: ^2.0.1
   build_runner: ^2.4.8
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.13
+  image: ^4.1.0
 
 flutter:
   uses-material-design: true
   assets:
     - assets/
     - assets/sounds/
+    - assets/ahabit_icon.svg
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FF6B8A"
+  adaptive_icon_foreground: "assets/icon.png"
+  web:
+    generate: false
+
+flutter_native_splash:
+  color: "#FF6B8A"
+  image: assets/icon.png
+  color_dark: "#FF4757"
+  image_dark: assets/icon.png
+  android_12:
+    image: assets/icon.png
+    icon_background_color: "#FF6B8A"
+    image_dark: assets/icon.png
+    icon_background_color_dark: "#FF4757"
+  fullscreen: true
+  android: true
+  ios: true

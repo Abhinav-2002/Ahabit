@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../services/notification_service.dart';
 import '../services/workmanager_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'webview_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -115,6 +117,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 12),
                     _buildInfoCard(userProvider),
                     
+                    const SizedBox(height: 24),
+
+                    // Legal Section
+                    _buildSectionTitle('Legal'),
+                    const SizedBox(height: 12),
+                    _buildLegalCard(),
+
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -447,9 +456,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: const Color(0xFFFF9F43).withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
-                  userProvider.genderEmoji,
-                  style: const TextStyle(fontSize: 20),
+                child: Center(
+                  child: Text(
+                    userProvider.genderEmoji,
+                    style: const TextStyle(fontSize: 20),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -475,6 +486,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  static const String _privacyLink =
+      'https://sites.google.com/view/unicorn-creation-privacy';
+  static const String _termsLink =
+      'https://sites.google.com/view/unicorn-creation';
+
+  Future<void> _launchUrl(String urlStr) async {
+    final uri = Uri.parse(urlStr);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the link. Please try again.')),
+        );
+      }
+    }
+  }
+
+  Widget _buildLegalCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildLegalTile(
+            icon: Icons.privacy_tip_outlined,
+            iconColor: const Color(0xFF4DABF7),
+            title: 'Privacy Policy',
+            onTap: () => _launchUrl(_privacyLink),
+          ),
+          Divider(
+            height: 1,
+            indent: 16,
+            endIndent: 16,
+            color: isDark ? const Color(0xFF3A3A3C) : const Color(0xFFF0F0F0),
+          ),
+          _buildLegalTile(
+            icon: Icons.description_outlined,
+            iconColor: const Color(0xFF51CF66),
+            title: 'Terms & Conditions',
+            onTap: () => _launchUrl(_termsLink),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegalTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFFAAAAAA)),
+          ],
+        ),
       ),
     );
   }

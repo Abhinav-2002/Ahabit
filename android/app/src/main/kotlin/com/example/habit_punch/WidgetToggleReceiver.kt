@@ -66,7 +66,7 @@ class WidgetToggleReceiver : BroadcastReceiver() {
             if (!found) {
                 pending.put(habitId)
             }
-            editor.putString("widget.pending_toggles", pending.toString())
+            editor.putString("flutter.widget.pending_toggles", pending.toString())
             editor.commit() // commit() not apply() — must be synchronous
 
             Log.d(TAG, "TOGGLE saved done=$doneCount total=$totalCount pct=$completionPct pending=$pending")

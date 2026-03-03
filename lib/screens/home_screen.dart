@@ -210,6 +210,10 @@ class _HomeScreenState extends State<HomeScreen>
 
     if (state == AppLifecycleState.resumed) {
 
+      // Sync any pending widget toggles first, then update widget
+
+      _syncPendingWidgetToggles();
+
       WidgetHelper.triggerWidgetUpdate();
 
       setState(() {});
@@ -330,9 +334,15 @@ class _HomeScreenState extends State<HomeScreen>
 
       final prefs = await SharedPreferences.getInstance();
 
+      // Force fresh read — Kotlin widget writes outside Flutter's in-memory cache
+
+      await prefs.reload();
+
       final pending = prefs.getString('widget.pending_toggles');
 
       if (pending == null || pending == '[]') return;
+
+      debugPrint('WIDGET SYNC: found pending=$pending');
 
 
 
@@ -358,13 +368,15 @@ class _HomeScreenState extends State<HomeScreen>
 
 
 
-      debugPrint('Synced ${decoded.length} widget toggles');
-
-      
+      debugPrint('WIDGET SYNC: synced ${decoded.length} toggles');
 
       // Update widget after syncing
 
       await WidgetHelper.updateWidgetFromBoxes();
+
+      // Force UI rebuild to reflect Hive changes
+
+      if (mounted) setState(() {});
 
     } catch (e) {
 
