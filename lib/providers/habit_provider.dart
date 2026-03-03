@@ -124,7 +124,7 @@ class HabitProvider extends ChangeNotifier {
   }
 
 
-  Future<void> addHabit(String name, String icon, int colorValue, {int colorIndex = 0, String frequency = 'daily'}) async {
+  Future<void> addHabit(String name, String icon, int colorValue, {int colorIndex = 0, String frequency = 'daily', String? description}) async {
     final habit = Habit(
       id: _uuid.v4(),
       name: name,
@@ -134,6 +134,7 @@ class HabitProvider extends ChangeNotifier {
       frequency: frequency,
       createdAt: DateTime.now(),
       sortOrder: habits.length,
+      description: description,
     );
     await _habitsBox.put(habit.id, habit);
     notifyListeners();

@@ -17,22 +17,23 @@ class HabitAdapter extends TypeAdapter<Habit> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Habit(
-      id: fields[0] is String ? fields[0] as String : '',
-      name: fields[1] is String ? fields[1] as String : '',
-      icon: fields[2] is String ? fields[2] as String : '📌',
-      colorValue: fields[3] is int ? fields[3] as int : 0xFF000000,
-      colorIndex: fields[4] is int ? fields[4] as int : 0,
-      frequency: fields[5] is String ? fields[5] as String : 'daily',
-      createdAt: fields[6] is DateTime ? fields[6] as DateTime : DateTime.now(),
-      isHidden: fields[7] is bool ? fields[7] as bool : false,
-      sortOrder: fields[8] is int ? fields[8] as int : 0,
+      id: fields[0] as String,
+      name: fields[1] as String,
+      icon: fields[2] as String,
+      colorValue: fields[3] as int,
+      colorIndex: fields[4] as int,
+      frequency: fields[5] as String,
+      createdAt: fields[6] as DateTime,
+      isHidden: fields[7] as bool,
+      sortOrder: fields[8] as int,
+      description: fields[9] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Habit obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +51,9 @@ class HabitAdapter extends TypeAdapter<Habit> {
       ..writeByte(7)
       ..write(obj.isHidden)
       ..writeByte(8)
-      ..write(obj.sortOrder);
+      ..write(obj.sortOrder)
+      ..writeByte(9)
+      ..write(obj.description);
   }
 
   @override

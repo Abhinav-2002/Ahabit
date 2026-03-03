@@ -74,6 +74,20 @@ class HabitListItem extends StatelessWidget {
                       color: isCompleted ? const Color(0xFFAAAAAA) : null,
                     ),
                   ),
+                  if (habit.description != null && habit.description!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      habit.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isCompleted
+                                ? const Color(0xFFAAAAAA).withOpacity(0.7)
+                                : Color(habit.colorValue).withOpacity(0.8),
+                            fontSize: 12,
+                          ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -17,12 +17,12 @@ class NoticeAdapter extends TypeAdapter<Notice> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Notice(
-      id: fields[0] is String ? fields[0] as String : '',
-      title: fields[1] is String ? fields[1] as String : '',
-      message: fields[2] is String ? fields[2] as String : '',
-      createdAt: fields[3] is DateTime ? fields[3] as DateTime : DateTime.now(),
-      isRead: fields[4] is bool ? fields[4] as bool : false,
-      type: fields[5] is String ? fields[5] as String : '',
+      id: fields[0] as String,
+      title: fields[1] as String,
+      message: fields[2] as String,
+      createdAt: fields[3] as DateTime,
+      isRead: fields[4] as bool,
+      type: fields[5] as String,
       data: (fields[6] as Map?)?.cast<String, dynamic>(),
     );
   }

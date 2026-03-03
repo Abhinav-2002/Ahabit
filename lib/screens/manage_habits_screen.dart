@@ -280,6 +280,7 @@ class _ManageHabitsScreenState extends State<ManageHabitsScreen> {
         result['emoji'] ?? result['icon'] ?? '📌',
         result['colorValue'] ?? 0xFFFF6584,
         frequency: result['frequency'] ?? 'daily',
+        description: result['description'],
       );
       WidgetHelper.triggerWidgetUpdate();
     }
@@ -295,6 +296,7 @@ class _ManageHabitsScreenState extends State<ManageHabitsScreen> {
       habit.icon = result['emoji'] ?? result['icon'] ?? habit.icon;
       habit.colorValue = result['colorValue'] ?? habit.colorValue;
       habit.frequency = result['frequency'] ?? habit.frequency;
+      habit.description = result['description'];
       await context.read<HabitProvider>().updateHabit(habit);
       WidgetHelper.triggerWidgetUpdate();
     }

@@ -35,6 +35,9 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       _selectedEmoji = widget.habit!.icon;
       _selectedColor = widget.habit!.colorValue;
       _frequency = widget.habit!.frequency;
+      if (widget.habit!.description != null) {
+        _descriptionController.text = widget.habit!.description!;
+      }
     }
   }
 

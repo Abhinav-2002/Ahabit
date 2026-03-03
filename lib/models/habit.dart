@@ -31,6 +31,9 @@ class Habit extends HiveObject {
   @HiveField(8)
   int sortOrder;
 
+  @HiveField(9)
+  String? description;
+
   Habit({
     required this.id,
     required this.name,
@@ -41,5 +44,6 @@ class Habit extends HiveObject {
     required this.createdAt,
     this.isHidden = false,
     this.sortOrder = 0,
+    this.description,
   });
 }

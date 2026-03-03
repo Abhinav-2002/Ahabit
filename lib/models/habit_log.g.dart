@@ -17,9 +17,9 @@ class HabitLogAdapter extends TypeAdapter<HabitLog> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return HabitLog(
-      habitId: fields[0] is String ? fields[0] as String : '',
-      date: fields[1] is DateTime ? fields[1] as DateTime : DateTime.now(),
-      isPunched: fields[2] is bool ? fields[2] as bool : false,
+      habitId: fields[0] as String,
+      date: fields[1] as DateTime,
+      isPunched: fields[2] as bool,
       completedAt: fields[3] as DateTime?,
     );
   }

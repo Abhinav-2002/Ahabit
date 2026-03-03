@@ -1214,6 +1214,21 @@ void dispose() {
                             ),
                           ],
                         ),
+                        if (habit.description != null && habit.description!.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            habit.description!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: isCompleted
+                                  ? (isDark ? const Color(0xFF666666) : const Color(0xFFBBBBBB))
+                                  : Color(habit.colorValue).withOpacity(0.75),
+                            ),
+                          ),
+                        ],
                         if (provider.calculateHabitStreak(habit.id) > 0) ...[
                           const SizedBox(height: 4),
                           Text(
