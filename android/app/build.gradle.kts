@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
@@ -7,22 +7,18 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
-
 android {
     namespace = "com.example.habit_punch"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
-
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
-
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.habit_punch"
@@ -33,27 +29,30 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
-
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // R8 (ProGuard successor) shrinks, obfuscates and optimises release builds.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
-
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
-
 configurations.all {
     resolutionStrategy {
         force("androidx.work:work-runtime:2.8.1")
         force("androidx.work:work-runtime-ktx:2.8.1")
     }
 }
-
 flutter {
     source = "../.."
 }
