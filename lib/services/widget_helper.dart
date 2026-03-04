@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/habit.dart';
 import '../models/habit_log.dart';
 import '../providers/habit_provider.dart';
+import '../utils/prefs_cache.dart';
 
 class WidgetHelper {
   static const String appGroupId = 'group.com.habitpunch.app';
@@ -233,7 +234,7 @@ class WidgetHelper {
       debugPrint('Habits JSON (${habitsJsonList.length} habits): $habitsJson');
 
       // Save data to SharedPreferences for the Android widget
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await PrefsCache.instance;
       
       debugPrint('WIDGET: Saving data to SharedPreferences...');
       await prefs.setInt('widget.streak', streak);
@@ -280,7 +281,7 @@ class WidgetHelper {
         await Hive.openBox<HabitLog>('habitLogs');
       }
       
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await PrefsCache.instance;
       // Force fresh read — Kotlin widget writes outside Flutter's in-memory cache
       await prefs.reload();
       // The widget saves to 'widget.pending_toggles' (flutter prefix added by plugin)

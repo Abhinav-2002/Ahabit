@@ -9,6 +9,7 @@ import 'notification_service.dart';
 import 'widget_helper.dart';
 import '../models/habit.dart';
 import '../models/habit_log.dart';
+import '../utils/prefs_cache.dart';
 
 // Workmanager task names
 const String incompleteHabitsTask = 'incomplete_habits_check';
@@ -37,19 +38,41 @@ void callbackDispatcher() {
   });
 }
 
+/// Retries [action] up to [maxAttempts] times with linear back-off.
+/// Designed for transient I/O errors in Hive / SharedPreferences operations.
+Future<T> _withRetry<T>(
+  Future<T> Function() action, {
+  int maxAttempts = 3,
+  Duration baseDelay = const Duration(seconds: 2),
+}) async {
+  for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await action();
+    } catch (e) {
+      if (attempt == maxAttempts) rethrow;
+      final wait = baseDelay * attempt;
+      debugPrint('_withRetry: attempt $attempt/$maxAttempts failed ($e). Retrying in ${wait.inSeconds}s');
+      await Future.delayed(wait);
+    }
+  }
+  throw StateError('_withRetry: unreachable');
+}
+
 // Background sync: apply pending widget toggles to Hive, then refresh widget
 Future<bool> _widgetSyncTask() async {
   try {
     debugPrint('WIDGET SYNC TASK: starting');
 
     // Initialize Hive safely
-    await Hive.initFlutter();
-    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(HabitAdapter());
-    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(HabitLogAdapter());
-    if (!Hive.isBoxOpen('habits')) await Hive.openBox<Habit>('habits');
-    if (!Hive.isBoxOpen('habitLogs')) await Hive.openBox<HabitLog>('habitLogs');
+    await _withRetry(() async {
+      await Hive.initFlutter();
+      if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(HabitAdapter());
+      if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(HabitLogAdapter());
+      if (!Hive.isBoxOpen('habits')) await Hive.openBox<Habit>('habits');
+      if (!Hive.isBoxOpen('habitLogs')) await Hive.openBox<HabitLog>('habitLogs');
+    });
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await PrefsCache.instance;
     await prefs.reload();
 
     // Apply pending toggles from widget to Hive
@@ -84,6 +107,7 @@ Future<bool> _widgetSyncTask() async {
       }
 
       await prefs.setString('widget.pending_toggles', '[]');
+      await prefs.reload();
       debugPrint('WIDGET SYNC TASK: applied ${pending.length} toggle(s) to Hive');
     }
 
@@ -115,26 +139,17 @@ Future<bool> _widgetSyncTask() async {
 // Check incomplete habits and show notification
 Future<bool> _checkAndNotifyIncompleteHabits() async {
   try {
-    // Initialize Hive for background access
-    await Hive.initFlutter();
-    if (!Hive.isAdapterRegistered(0)) {
-      Hive.registerAdapter(HabitAdapter());
-    }
-    if (!Hive.isAdapterRegistered(1)) {
-      Hive.registerAdapter(HabitLogAdapter());
-    }
-    
-    // Open boxes
-    if (!Hive.isBoxOpen('habits')) {
-      await Hive.openBox<Habit>('habits');
-    }
-    if (!Hive.isBoxOpen('habitLogs')) {
-      await Hive.openBox<HabitLog>('habitLogs');
-    }
-    
+    await _withRetry(() async {
+      await Hive.initFlutter();
+      if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(HabitAdapter());
+      if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(HabitLogAdapter());
+      if (!Hive.isBoxOpen('habits')) await Hive.openBox<Habit>('habits');
+      if (!Hive.isBoxOpen('habitLogs')) await Hive.openBox<HabitLog>('habitLogs');
+    });
+
     final habitsBox = Hive.box<Habit>('habits');
     final logsBox = Hive.box<HabitLog>('habitLogs');
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await PrefsCache.instance;
     
     // Check if feature is enabled
     final enabled = prefs.getBool('incomplete_reminders_enabled') ?? false;
@@ -198,23 +213,14 @@ Future<bool> _checkAndNotifyIncompleteHabits() async {
 Future<bool> _midnightWidgetReset() async {
   try {
     debugPrint('MIDNIGHT RESET: Starting widget refresh for new day');
-    
-    // Initialize Hive for background access
-    await Hive.initFlutter();
-    if (!Hive.isAdapterRegistered(0)) {
-      Hive.registerAdapter(HabitAdapter());
-    }
-    if (!Hive.isAdapterRegistered(1)) {
-      Hive.registerAdapter(HabitLogAdapter());
-    }
-    
-    // Open boxes
-    if (!Hive.isBoxOpen('habits')) {
-      await Hive.openBox<Habit>('habits');
-    }
-    if (!Hive.isBoxOpen('habitLogs')) {
-      await Hive.openBox<HabitLog>('habitLogs');
-    }
+
+    await _withRetry(() async {
+      await Hive.initFlutter();
+      if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(HabitAdapter());
+      if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(HabitLogAdapter());
+      if (!Hive.isBoxOpen('habits')) await Hive.openBox<Habit>('habits');
+      if (!Hive.isBoxOpen('habitLogs')) await Hive.openBox<HabitLog>('habitLogs');
+    });
     
     // Update widget with fresh data for new day
     await WidgetHelper.updateWidgetFromBoxes();

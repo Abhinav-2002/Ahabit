@@ -17,6 +17,7 @@ import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
 import 'services/widget_helper.dart';
 import 'services/workmanager_service.dart';
+import 'utils/prefs_cache.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -91,9 +92,10 @@ void main() {
       }
       
       await Hive.openBox('settings');
-      
-      // Check onboarding status BEFORE runApp
-      final prefs = await SharedPreferences.getInstance();
+
+      // Initialise SharedPreferences once — all subsequent callers use PrefsCache.
+      await PrefsCache.init();
+      final prefs = PrefsCache.requireInstance;
       final bool onboardingDone = prefs.getBool('onboarding_done') ?? false;
       
       // Initialize home widget
