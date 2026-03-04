@@ -701,11 +701,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              label,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    label,
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (index >= 4) ...[  
+                                  const SizedBox(width: 4),
+                                  GestureDetector(
+                                    onTap: () => _showRenameReminderDialog(
+                                      userProvider, index, label),
+                                    child: const Icon(
+                                      Icons.edit_outlined,
+                                      size: 14,
+                                      color: Color(0xFF845EF7),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             Text(
                               timeStr,
@@ -1000,5 +1019,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
         customTimes: updatedTimes,
       );
     }
+  }
+
+  // Only called for user-added reminders (index >= 4).
+  // Does NOT touch scheduling — just renames the label and saves via provider.
+  Future<void> _showRenameReminderDialog(
+    UserProvider userProvider,
+    int index,
+    String currentLabel,
+  ) async {
+    final controller = TextEditingController(text: currentLabel);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename Reminder'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 30,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            hintText: 'Enter reminder name',
+            counterText: '',
+          ),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text(
+              'Save',
+              style: TextStyle(color: Color(0xFF845EF7)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null || result.isEmpty) return;
+    if (!mounted) return;
+
+    // Re-read provider after async gap — avoids stale watch reference
+    // that causes _dependents.isEmpty assertion in InheritedElement.unmount.
+    final provider = context.read<UserProvider>();
+    final updatedTimes = List<Map<String, dynamic>>.from(provider.smartReminderTimes);
+    updatedTimes[index] = Map<String, dynamic>.from(updatedTimes[index])
+      ..['label'] = result;
+    await provider.setSmartReminderTimes(updatedTimes);
   }
 }
