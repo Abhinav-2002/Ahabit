@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
@@ -11,6 +13,7 @@ import '../models/habit_log.dart';
 // Workmanager task names
 const String incompleteHabitsTask = 'incomplete_habits_check';
 const String midnightResetTask = 'midnight_widget_reset';
+const String widgetSyncTask = 'widget_sync';
 
 // Callback dispatcher for background tasks
 @pragma('vm:entry-point')
@@ -25,9 +28,88 @@ void callbackDispatcher() {
     if (task == midnightResetTask) {
       return await _midnightWidgetReset();
     }
-    
+
+    if (task == widgetSyncTask) {
+      return await _widgetSyncTask();
+    }
+
     return Future.value(true);
   });
+}
+
+// Background sync: apply pending widget toggles to Hive, then refresh widget
+Future<bool> _widgetSyncTask() async {
+  try {
+    debugPrint('WIDGET SYNC TASK: starting');
+
+    // Initialize Hive safely
+    await Hive.initFlutter();
+    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(HabitAdapter());
+    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(HabitLogAdapter());
+    if (!Hive.isBoxOpen('habits')) await Hive.openBox<Habit>('habits');
+    if (!Hive.isBoxOpen('habitLogs')) await Hive.openBox<HabitLog>('habitLogs');
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+
+    // Apply pending toggles from widget to Hive
+    final pendingJson = prefs.getString('widget.pending_toggles') ?? '[]';
+    final List<dynamic> pending = jsonDecode(pendingJson);
+
+    if (pending.isNotEmpty) {
+      final logsBox = Hive.box<HabitLog>('habitLogs');
+      final now = DateTime.now();
+
+      for (final habitId in pending) {
+        final id = habitId as String;
+        final existingIdx = logsBox.values.toList().indexWhere((l) =>
+            l.habitId == id &&
+            l.date.year == now.year &&
+            l.date.month == now.month &&
+            l.date.day == now.day);
+
+        if (existingIdx >= 0) {
+          final log = logsBox.getAt(existingIdx)!;
+          log.isPunched = !log.isPunched;
+          log.completedAt = log.isPunched ? now : null;
+          await log.save();
+        } else {
+          await logsBox.add(HabitLog(
+            habitId: id,
+            date: now,
+            isPunched: true,
+            completedAt: now,
+          ));
+        }
+      }
+
+      await prefs.setString('widget.pending_toggles', '[]');
+      debugPrint('WIDGET SYNC TASK: applied ${pending.length} toggle(s) to Hive');
+    }
+
+    // Rebuild filtered widget data from Hive
+    await WidgetHelper.updateWidgetFromBoxes();
+
+    // HomeWidget.updateWidget fallback to ensure widget redraws
+    try {
+      await HomeWidget.updateWidget(
+        androidName: WidgetHelper.androidWidgetMediumName,
+        iOSName: WidgetHelper.iOSWidgetName,
+      );
+      await HomeWidget.updateWidget(
+        androidName: WidgetHelper.androidWidgetSmallName,
+      );
+    } catch (e) {
+      debugPrint('WIDGET SYNC TASK: HomeWidget.updateWidget failed (non-fatal): $e');
+    }
+
+    debugPrint('WIDGET SYNC TASK: completed successfully');
+    return true;
+  } catch (e, stack) {
+    debugPrint('WIDGET SYNC TASK ERROR: $e');
+    debugPrint('Stack: $stack');
+    return false;
+  }
 }
 
 // Check incomplete habits and show notification
