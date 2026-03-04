@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "5443914367",
+    "project_id": "ahabit-65d7f",
+    "storage_bucket": "ahabit-65d7f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:5443914367:android:c456f916e3bd2cdca7cd4a",
+        "android_client_info": {
+          "package_name": "com.example.habit_punch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZcy3EIFhkfC_vAWN61HqZ41FWiDC1b-0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
