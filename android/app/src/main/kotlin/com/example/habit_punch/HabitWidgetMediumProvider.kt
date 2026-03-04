@@ -119,35 +119,50 @@ class HabitWidgetMediumProvider : AppWidgetProvider() {
             
             Log.d(TAG, "MEDIUM Parsing habits JSON: array length=${habits.length()}, will display $count habits")
 
-            for (i in 0 until 7) {
-                if (i < count) {
-                    val habit = habits.getJSONObject(i)
-                    val id = habit.optString("id", "")
-                    val name = habit.optString("name", "")
-                    val icon = habit.optString("icon", "")
-                    val todayDone = habit.optBoolean("todayDone", false)
-
-                    views.setViewVisibility(ROW_IDS[i], View.VISIBLE)
-                    views.setTextViewText(ICON_IDS[i], icon)
-                    views.setTextViewText(NAME_IDS[i], name)
-                    
-                    val checkDrawable = if (todayDone) R.drawable.widget_check_done else R.drawable.widget_check_empty
-                    views.setImageViewResource(CHECK_IDS[i], checkDrawable)
-
-                    // Set up toggle PendingIntent for checkbox
-                    val toggleIntent = Intent(context, WidgetToggleReceiver::class.java).apply {
-                        action = "com.example.habit_punch.TOGGLE_HABIT"
-                        putExtra("habit_id", id)
-                    }
-                    val pendingIntent = PendingIntent.getBroadcast(
-                        context, id.hashCode(), toggleIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    views.setOnClickPendingIntent(CHECK_IDS[i], pendingIntent)
-
-                    Log.d(TAG, "MEDIUM ROW $i: icon='$icon' name='$name' done=$todayDone id=$id")
-                } else {
+            if (count == 0) {
+                // No incomplete habits — show empty-state message in row 0
+                val emptyMsg = allPrefs["flutter.widget.empty_message"] as? String
+                    ?: "All habits done! \uD83C\uDF89"
+                views.setViewVisibility(ROW_IDS[0], View.VISIBLE)
+                views.setTextViewText(ICON_IDS[0], "\u2705")
+                views.setTextViewText(NAME_IDS[0], emptyMsg)
+                views.setImageViewResource(CHECK_IDS[0], R.drawable.widget_check_done)
+                // No toggle PendingIntent — tapping the row opens the app instead
+                Log.d(TAG, "MEDIUM empty state: $emptyMsg")
+                for (i in 1 until 7) {
                     views.setViewVisibility(ROW_IDS[i], View.GONE)
+                }
+            } else {
+                for (i in 0 until 7) {
+                    if (i < count) {
+                        val habit = habits.getJSONObject(i)
+                        val id = habit.optString("id", "")
+                        val name = habit.optString("name", "")
+                        val icon = habit.optString("icon", "")
+                        val todayDone = habit.optBoolean("todayDone", false)
+
+                        views.setViewVisibility(ROW_IDS[i], View.VISIBLE)
+                        views.setTextViewText(ICON_IDS[i], icon)
+                        views.setTextViewText(NAME_IDS[i], name)
+
+                        val checkDrawable = if (todayDone) R.drawable.widget_check_done else R.drawable.widget_check_empty
+                        views.setImageViewResource(CHECK_IDS[i], checkDrawable)
+
+                        // Set up toggle PendingIntent for checkbox
+                        val toggleIntent = Intent(context, WidgetToggleReceiver::class.java).apply {
+                            action = "com.example.habit_punch.TOGGLE_HABIT"
+                            putExtra("habit_id", id)
+                        }
+                        val pendingIntent = PendingIntent.getBroadcast(
+                            context, id.hashCode(), toggleIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        views.setOnClickPendingIntent(CHECK_IDS[i], pendingIntent)
+
+                        Log.d(TAG, "MEDIUM ROW $i: icon='$icon' name='$name' done=$todayDone id=$id")
+                    } else {
+                        views.setViewVisibility(ROW_IDS[i], View.GONE)
+                    }
                 }
             }
         } catch (e: Exception) {

@@ -203,13 +203,30 @@ class WidgetHelper {
 
       debugPrint('Streak: $streak');
 
-      // Build habits JSON - include up to 7 habits
-      final habitsJsonList = habits.take(7).map((h) => {
+      // Build habits JSON — only show INCOMPLETE habits so completed tasks
+      // roll out and the next pending task rolls in (widgets cannot scroll).
+      // Stats (done_count, total_count, pct) still reflect ALL habits.
+      final incompleteHabits = habits.where((h) {
+        return !logsBox.values.any((l) =>
+            l.habitId == h.id && _isSameDay(l.date, now) && l.isPunched);
+      }).toList();
+
+      // Determine empty-state message (read by Kotlin providers when list is empty)
+      final String emptyMessage;
+      if (habits.isEmpty) {
+        emptyMessage = 'No habits yet';
+      } else if (incompleteHabits.isEmpty) {
+        emptyMessage = 'All habits done! 🎉';
+      } else {
+        emptyMessage = '';
+      }
+
+      // Recalculate filtered list fresh each time — handles rapid completions
+      final habitsJsonList = incompleteHabits.take(7).map((h) => {
         'id': h.id,
         'name': h.name,
         'icon': h.icon,
-        'todayDone': logsBox.values.any((l) =>
-            l.habitId == h.id && _isSameDay(l.date, now) && l.isPunched),
+        'todayDone': false, // by definition: only incomplete habits are in this list
       }).toList();
       final String habitsJson = jsonEncode(habitsJsonList);
 
@@ -225,6 +242,7 @@ class WidgetHelper {
       await prefs.setInt('widget.completion_pct', percentage);
       await prefs.setString('widget.date_str', DateFormat('EEE, MMM d').format(now));
       await prefs.setString('widget.habits_json', habitsJson);
+      await prefs.setString('widget.empty_message', emptyMessage);
       await prefs.setString('widget.pending_toggles', '[]');
 
       // KEY LOG: Show exactly what was written so we can compare with Kotlin logs

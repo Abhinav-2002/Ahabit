@@ -104,39 +104,53 @@ class HabitWidgetSmallProvider : AppWidgetProvider() {
         // Parse and display habits (max 4 for small widget)
         try {
             val habits = org.json.JSONArray(habitsJsonStr)
-            val count = Math.min(habits.length(), 4)
-            
+            val count = minOf(habits.length(), 4)
+
             Log.d(TAG, "SMALL Parsing habits: ${habits.length()} total, showing $count")
 
-            for (i in 0 until count) {
-                val habit = habits.getJSONObject(i)
-                val id = habit.optString("id", "")
-                val name = habit.optString("name", "")
-                val todayDone = habit.optBoolean("todayDone", false)
-
-                views.setViewVisibility(ROW_IDS[i], android.view.View.VISIBLE)
-                views.setTextViewText(NAME_IDS[i], name)
-                
-                val checkDrawable = if (todayDone) R.drawable.widget_check_done else R.drawable.widget_check_empty
-                views.setImageViewResource(CHECK_IDS[i], checkDrawable)
-
-                // Set up toggle PendingIntent
-                val toggleIntent = android.content.Intent(context, WidgetToggleReceiver::class.java).apply {
-                    action = "com.example.habit_punch.TOGGLE_HABIT"
-                    putExtra("habit_id", id)
+            if (count == 0) {
+                // No incomplete habits — show empty-state message in row 0
+                val emptyMsg = allPrefs["flutter.widget.empty_message"] as? String
+                    ?: "All habits done! \uD83C\uDF89"
+                views.setViewVisibility(ROW_IDS[0], android.view.View.VISIBLE)
+                views.setTextViewText(NAME_IDS[0], emptyMsg)
+                views.setImageViewResource(CHECK_IDS[0], R.drawable.widget_check_done)
+                // No toggle PendingIntent — tapping the row opens the app instead
+                Log.d(TAG, "SMALL empty state: $emptyMsg")
+                for (i in 1 until 4) {
+                    views.setViewVisibility(ROW_IDS[i], android.view.View.GONE)
                 }
-                val pendingIntent = android.app.PendingIntent.getBroadcast(
-                    context, id.hashCode(), toggleIntent,
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-                )
-                views.setOnClickPendingIntent(CHECK_IDS[i], pendingIntent)
+            } else {
+                for (i in 0 until count) {
+                    val habit = habits.getJSONObject(i)
+                    val id = habit.optString("id", "")
+                    val name = habit.optString("name", "")
+                    val todayDone = habit.optBoolean("todayDone", false)
 
-                Log.d(TAG, "SMALL ROW $i: name='$name' done=$todayDone")
-            }
-            
-            // Hide remaining rows
-            for (i in count until 4) {
-                views.setViewVisibility(ROW_IDS[i], android.view.View.GONE)
+                    views.setViewVisibility(ROW_IDS[i], android.view.View.VISIBLE)
+                    views.setTextViewText(NAME_IDS[i], name)
+
+                    val checkDrawable = if (todayDone) R.drawable.widget_check_done else R.drawable.widget_check_empty
+                    views.setImageViewResource(CHECK_IDS[i], checkDrawable)
+
+                    // Set up toggle PendingIntent
+                    val toggleIntent = android.content.Intent(context, WidgetToggleReceiver::class.java).apply {
+                        action = "com.example.habit_punch.TOGGLE_HABIT"
+                        putExtra("habit_id", id)
+                    }
+                    val pendingIntent = android.app.PendingIntent.getBroadcast(
+                        context, id.hashCode(), toggleIntent,
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                    )
+                    views.setOnClickPendingIntent(CHECK_IDS[i], pendingIntent)
+
+                    Log.d(TAG, "SMALL ROW $i: name='$name' done=$todayDone")
+                }
+
+                // Hide remaining rows
+                for (i in count until 4) {
+                    views.setViewVisibility(ROW_IDS[i], android.view.View.GONE)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "SMALL Error parsing habits: ${e.message}")
