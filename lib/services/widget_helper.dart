@@ -15,7 +15,7 @@ class WidgetHelper {
   static const String androidWidgetMediumName = 'HabitWidgetMediumProvider';
   static const String androidWidgetSmallName = 'HabitWidgetSmallProvider';
   static const String iOSWidgetName = 'HabitWidget';
-  static const MethodChannel _methodChannel = MethodChannel('com.example.habit_punch/widget');
+  static const MethodChannel _methodChannel = MethodChannel('com.ahabit.tracker/widget');
 
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;

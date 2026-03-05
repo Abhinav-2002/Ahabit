@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     
     <!-- Widget permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.UPDATE_APPWIDGET" />
     
     <!-- Notification permissions -->
@@ -40,7 +41,7 @@
         
         <!-- Widget Providers -->
         <receiver 
-            android:name="com.example.habit_punch.HabitWidgetMediumProvider"
+            android:name="com.ahabit.tracker.HabitWidgetMediumProvider"
             android:exported="true"
             android:enabled="true">
             <intent-filter>
@@ -54,7 +55,7 @@
         </receiver>
 
         <receiver 
-            android:name="com.example.habit_punch.HabitWidgetSmallProvider"
+            android:name="com.ahabit.tracker.HabitWidgetSmallProvider"
             android:exported="true"
             android:enabled="true">
             <intent-filter>
@@ -72,7 +73,7 @@
             android:name=".WidgetToggleReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.example.habit_punch.TOGGLE_HABIT"/>
+                <action android:name="com.ahabit.tracker.TOGGLE_HABIT"/>
             </intent-filter>
         </receiver>
         

@@ -17,12 +17,24 @@
 -dontwarn io.flutter.**
 
 # -----------------------------------------------------------------------------
+# 2. audioplayers plugin  (xyz.luan.audioplayers / audioplayers_android v5.x)
+#    The plugin registers its FlutterPlugin and AudioService subclasses via
+#    reflection using the Flutter plugin registry. R8 strips them in release
+#    builds because there are no direct Java/Kotlin references from app code.
+#    MediaPlayer, ExoPlayer wrappers and the WrappedMediaPlayer are also
+#    looked up reflectively by plugin internals.
+# -----------------------------------------------------------------------------
+-keep class xyz.luan.audioplayers.** { *; }
+-keepclassmembers class xyz.luan.audioplayers.** { *; }
+-dontwarn xyz.luan.audioplayers.**
+
+# -----------------------------------------------------------------------------
 # 2. App-specific Kotlin classes
 #    WidgetToggleReceiver and the two AppWidgetProviders are registered in
 #    AndroidManifest.xml and invoked by the OS by name. MainActivity is the
 #    Flutter entry point. Obfuscating any of these breaks the app.
 # -----------------------------------------------------------------------------
--keep class com.example.habit_punch.** { *; }
+-keep class com.ahabit.tracker.** { *; }
 
 # -----------------------------------------------------------------------------
 # 3. Android AppWidgetProvider subclasses (any package)

@@ -266,8 +266,13 @@ class _FocusScreenState extends State<FocusScreen>
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
       await _audioPlayer.play(UrlSource(url));
       if (mounted) setState(() => _soundLoading = false);
-    } catch (e) {
-      debugPrint('Sound stream error (non-fatal): $e');
+    } on PlatformException catch (e) {
+      // Log platform-specific errors (missing permissions, network issues, etc.)
+      debugPrint('AUDIO ERROR [PlatformException]: code=${e.code}, message=${e.message}, details=${e.details}');
+      if (mounted) setState(() => _soundLoading = false);
+    } catch (e, st) {
+      debugPrint('AUDIO ERROR [${e.runtimeType}]: $e');
+      debugPrint('Stack: $st');
       if (mounted) setState(() => _soundLoading = false);
     }
   }

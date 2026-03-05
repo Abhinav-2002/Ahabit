@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:5443914367:android:7da7d351b2c108e0a7cd4a",
+        "android_client_info": {
+          "package_name": "com.ahabit.tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZcy3EIFhkfC_vAWN61HqZ41FWiDC1b-0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:5443914367:android:c456f916e3bd2cdca7cd4a",
         "android_client_info": {
           "package_name": "com.example.habit_punch"

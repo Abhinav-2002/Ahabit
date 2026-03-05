@@ -1,4 +1,4 @@
-package com.example.habit_punch
+package com.ahabit.tracker
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -150,7 +150,7 @@ class HabitWidgetMediumProvider : AppWidgetProvider() {
 
                         // Set up toggle PendingIntent for checkbox
                         val toggleIntent = Intent(context, WidgetToggleReceiver::class.java).apply {
-                            action = "com.example.habit_punch.TOGGLE_HABIT"
+                            action = "com.ahabit.tracker.TOGGLE_HABIT"
                             putExtra("habit_id", id)
                         }
                         val pendingIntent = PendingIntent.getBroadcast(

@@ -491,9 +491,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   static const String _privacyLink =
-      'https://sites.google.com/view/unicorn-creation-privacy';
+      'https://sites.google.com/view/privacypolicy-ahabit/home';
   static const String _termsLink =
-      'https://sites.google.com/view/unicorn-creation';
+      'https://sites.google.com/view/ahabit-terms-and-conditions/home';
 
   Future<void> _launchUrl(String urlStr) async {
     final uri = Uri.parse(urlStr);

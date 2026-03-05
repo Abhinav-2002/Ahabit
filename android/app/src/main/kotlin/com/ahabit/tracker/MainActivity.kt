@@ -1,4 +1,4 @@
-package com.example.habit_punch
+package com.ahabit.tracker
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -13,7 +13,7 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private const val TAG = "HabitWidget"
-        private const val CHANNEL = "com.example.habit_punch/widget"
+        private const val CHANNEL = "com.ahabit.tracker/widget"
         private const val PREFS_NAME = "FlutterSharedPreferences"
     }
 

@@ -1,4 +1,4 @@
-package com.example.habit_punch
+package com.ahabit.tracker
 
 import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
