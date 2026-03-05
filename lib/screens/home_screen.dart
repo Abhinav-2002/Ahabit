@@ -49,6 +49,9 @@ import 'template_packs_screen.dart';
 import 'focus_screen.dart';
 
 import '../utils/habit_utils.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 
 
@@ -170,6 +173,8 @@ class _HomeScreenState extends State<HomeScreen>
 
     _checkShowTemplates();
 
+    _checkAppUpdate(); // Check for app updates
+
 
 
     // Listen to Hive box changes for auto widget update
@@ -223,6 +228,51 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
 
+
+  Future<void> _checkAppUpdate() async {
+    try {
+      final remoteConfig = FirebaseRemoteConfig.instance;
+      
+      await remoteConfig.setConfigSettings(
+        RemoteConfigSettings(
+          fetchTimeout: Duration(seconds: 10),
+          minimumFetchInterval: Duration(seconds: 0),
+        ),
+      );
+      
+      await remoteConfig.fetchAndActivate();
+      
+      final String latestVersion = remoteConfig.getString('latest_version');
+      
+      if (latestVersion.isNotEmpty) {
+        final packageInfo = await PackageInfo.fromPlatform();
+        final String currentVersion = packageInfo.version;
+        
+        if (latestVersion != currentVersion) {
+          _openPlayStore();
+        }
+      }
+    } catch (e) {
+      debugPrint('Remote Config error: $e');
+    }
+  }
+
+  Future<void> _openPlayStore() async {
+    const String packageName = 'com.ahabit.tracker';
+    final Uri url = Uri.parse(
+      'https://play.google.com/store/apps/details?id=$packageName',
+    );
+    
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        debugPrint('Could not launch Play Store');
+      }
+    } catch (e) {
+      debugPrint('Error launching Play Store: $e');
+    }
+  }
 
   void _checkShowTemplates() async {
 
@@ -344,13 +394,9 @@ class _HomeScreenState extends State<HomeScreen>
 
       debugPrint('WIDGET SYNC: found pending=$pending');
 
-
-
       // Clear pending immediately to prevent double
 
       await prefs.remove('widget.pending_toggles');
-
-
 
       final provider = context.read<HabitProvider>();
 

@@ -6,6 +6,7 @@ import '../providers/theme_provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/notices_provider.dart';
 import '../models/notice.dart';
+import 'home_screen.dart';
 import 'manage_habits_screen.dart';
 import 'settings_screen.dart';
 import 'rank_celebration_screen.dart';
@@ -63,7 +64,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userProvider = context.watch<UserProvider>();
     final noticesProvider = context.watch<NoticesProvider>();
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) _goBack();
+      },
+      child: Scaffold(
       backgroundColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F7),
       body: SafeArea(
         child: Column(
@@ -75,7 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () {},
+                    onTap: _goBack,
                     child: Container(
                       width: 36,
                       height: 36,
@@ -225,6 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -847,6 +854,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const SettingsScreen()),
     );
+  }
+
+  void _goBack() {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    }
   }
 
   // Helper methods
